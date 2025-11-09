@@ -15,6 +15,7 @@ namespace MerchantRepricerAsync
         public HotkeyNode Hotkey { get; set; }
 
         public ToggleNode DebugMode { get; set; }
+        public ToggleNode Simulate { get; set; }
         public ToggleNode RepriceOtherThanChaos { get; set; }
         public RangeNode<int> RepricePercent { get; set; }
         public RangeNode<int> RepriceSubtract { get; set; }
@@ -29,6 +30,7 @@ namespace MerchantRepricerAsync
 
             Hotkey = Keys.F5;
             DebugMode = new ToggleNode(false);
+            Simulate = new ToggleNode(false);
             RepriceOtherThanChaos = new ToggleNode(false);
             RepricePercent = new RangeNode<int>(90,55, 99);
             RepriceSubtract = new RangeNode<int>(1,1 , 5);

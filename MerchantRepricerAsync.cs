@@ -140,6 +140,8 @@ namespace MerchantRepricerAsync
                             Y = i.PosY,
                             W = i.SizeX,
                             H = i.SizeY,
+                            BaseName = i.Item.GetComponent<Base>()?.Name,
+                            ItemName = i.Item.GetComponent<Mods>()?.UniqueName,
                             Price = i.Item.GetComponent<Base>()?.PublicPrice ?? ""
                         })
                         .ToList();
@@ -154,6 +156,8 @@ namespace MerchantRepricerAsync
                         float y = inventoryRect.Y + (item.Y * squareHeight);
                         float w = squareWidth * item.W;
                         float h = squareHeight * item.H;
+                        var baseName = item.BaseName;
+                        var itemName = item.ItemName;
                         var drawRect = new SharpDX.RectangleF(x, y, w, h);
                         Graphics.DrawFrame(drawRect, SharpDX.Color.Red, 2);
                         Graphics.DrawFrame(inventoryRect, SharpDX.Color.Red, 5);
@@ -175,14 +179,15 @@ namespace MerchantRepricerAsync
                             // click the item
                             if (amount != newAmount && (currency == "chaos" || Settings.RepriceOtherThanChaos))
                             {
-                                LogMessage($"Repriced {amount} {currency} → {newAmount} {currency}", 5, Color.LimeGreen);
+                                LogMessage($"{itemName} | {baseName} -  {amount} {currency} → {newAmount} {currency}", 5, Color.LimeGreen);
                                 await Task.Delay(Settings.ItemDelay, token);
                                 //await _inputHandler.MoveCursor(new Vector2(drawRect.Center.X, drawRect.Center.Y), token);
-                                await _inputHandler.MoveCursorAndRightClick(new Vector2(drawRect.Center.X, drawRect.Center.Y), token);
+                                if(!Settings.Simulate)
+                                    await _inputHandler.MoveCursorAndRightClick(new Vector2(drawRect.Center.X, drawRect.Center.Y), token);
                                 await Task.Delay(Settings.ItemDelay, token);
                                 await Task.Delay(Settings.InputDelay, token);
 
-                                if (!ingameState.IngameUi.PopUpWindow.IsVisible)
+                                if (!ingameState.IngameUi.PopUpWindow.IsVisible && !Settings.Simulate)
                                 {
                                     LogMessage("Couldnt price as window didnt popup, skipping", 5, Color.Gray);
                                     continue;
@@ -191,37 +196,44 @@ namespace MerchantRepricerAsync
                                 string newAmountText = ((int)newAmount).ToString();  // ensure integer (no decimals)
                                 if (Settings.DebugMode) 
                                     LogMessage($"newAmountText {newAmountText}", 5, Color.LimeGreen);
-                                foreach (char c in newAmountText)
+
+                                if (!Settings.Simulate)
                                 {
-                                    if (char.IsDigit(c))
+                                    foreach (char c in newAmountText)
                                     {
-                                        // Convert char to virtual key (e.g. '3' -> Keys.D3)
-                                        var key = (Keys)Enum.Parse(typeof(Keys), "D" + c);
-                                        if(Settings.DebugMode)
-                                            LogMessage($"pressing {key.ToString()}", 5, Color.LimeGreen);
-                                        try
+                                        if (char.IsDigit(c))
                                         {
-                                            Input.KeyDown(key);
+                                            // Convert char to virtual key (e.g. '3' -> Keys.D3)
+                                            var key = (Keys)Enum.Parse(typeof(Keys), "D" + c);
+                                            if (Settings.DebugMode)
+                                                LogMessage($"pressing {key.ToString()}", 5, Color.LimeGreen);
+                                            try
+                                            {
+                                                Input.KeyDown(key);
+                                            }
+                                            finally
+                                            {
+                                                Input.KeyUp(key);
+                                            }
+                                            await Task.Delay(Settings.ItemDelay, token);  // small delay between key presses
                                         }
-                                        finally
-                                        {
-                                            Input.KeyUp(key);
-                                        }
-                                        await Task.Delay(Settings.ItemDelay, token);  // small delay between key presses
                                     }
+                                    await _inputHandler.PressEnterKey(token);                                 // press enter
                                 }
-                                // press enter
-                                await _inputHandler.PressEnterKey(token);
+                                
+
+
 
                                 await Task.Delay(Settings.InputDelay, token);
                             }else  if (currency == "chaos" && newAmount == amount && amount > 1)
                             {
-                                newAmount = amount - 1;
-                                LogMessage($"Chaos price adjusted manually from {amount} → {newAmount}", 5, Color.Orange);
+                                newAmount = amount - 1;                                
+                                LogMessage($"{itemName} | {baseName} -  {amount} {currency} → {newAmount} {currency}", 5, Color.LimeGreen);
                                 await Task.Delay(Settings.ItemDelay, token);
                                 //await _inputHandler.MoveCursor(new Vector2(drawRect.Center.X, drawRect.Center.Y), token);
-                                await _inputHandler.MoveCursorAndRightClick(new Vector2(drawRect.Center.X, drawRect.Center.Y), token);
-                                if (!ingameState.IngameUi.PopUpWindow.IsVisible)
+                                if (!Settings.Simulate)                                
+                                    await _inputHandler.MoveCursorAndRightClick(new Vector2(drawRect.Center.X, drawRect.Center.Y), token);
+                                if (!ingameState.IngameUi.PopUpWindow.IsVisible && !Settings.Simulate)
                                 {
                                     LogMessage("Couldnt price as window didnt popup, skipping", 5, Color.Gray);
                                     continue;
@@ -232,27 +244,33 @@ namespace MerchantRepricerAsync
                                 string newAmountText = ((int)newAmount).ToString();  // ensure integer (no decimals)
                                 if (Settings.DebugMode) 
                                     LogMessage($"newAmountText {newAmountText}", 5, Color.LimeGreen);
-                                foreach (char c in newAmountText)
+
+
+                                if (!Settings.Simulate)
                                 {
-                                    if (char.IsDigit(c))
+                                    foreach (char c in newAmountText)
                                     {
-                                        // Convert char to virtual key (e.g. '3' -> Keys.D3)
-                                        var key = (Keys)Enum.Parse(typeof(Keys), "D" + c);
-                                        if (Settings.DebugMode) 
-                                            LogMessage($"pressing {key.ToString()}", 5, Color.LimeGreen);
-                                        try
+                                        if (char.IsDigit(c))
                                         {
-                                            Input.KeyDown(key);
+                                            // Convert char to virtual key (e.g. '3' -> Keys.D3)
+                                            var key = (Keys)Enum.Parse(typeof(Keys), "D" + c);
+                                            if (Settings.DebugMode)
+                                                LogMessage($"pressing {key.ToString()}", 5, Color.LimeGreen);
+                                            try
+                                            {
+                                                Input.KeyDown(key);
+                                            }
+                                            finally
+                                            {
+                                                Input.KeyUp(key);
+                                            }
+                                            await Task.Delay(Settings.ItemDelay, token);  // small delay between key presses
                                         }
-                                        finally
-                                        {
-                                            Input.KeyUp(key);
-                                        }
-                                        await Task.Delay(Settings.ItemDelay, token);  // small delay between key presses
                                     }
+                                    await _inputHandler.PressEnterKey(token);                                 // press enter
                                 }
                                 // press enter
-                                await _inputHandler.PressEnterKey(token);
+                                
 
                                 await Task.Delay(Settings.InputDelay, token);
                                 
